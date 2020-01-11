@@ -14,39 +14,30 @@
 
 // author : 颜洪毅
 // e-mail : yhyzgn@gmail.com
-// time   : 2020-01-09 9:38 下午
+// time   : 2020-01-11 4:42 下午
 // version: 1.0.0
 // desc   : 
 
-package internal
+package sqlite
 
 import (
-	"database/sql"
-	"reflect"
+	"fmt"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/yhyzgn/glue/dialect"
 )
 
-type Dialect interface {
-	Name() string
+type Dialect struct {
+	dialect.Default
+}
 
-	Driver() string
+func (*Dialect) Name() string {
+	return "sqlite"
+}
 
-	Quote(key string) string
+func (*Dialect) Driver() string {
+	return "sqlite3"
+}
 
-	Quotes(keys ...string) []string
-
-	Placeholder(index int) string
-
-	Insert(executor Executor, command *Command) (sql.Result, error)
-
-	Update(executor Executor, command *Command) (sql.Result, error)
-
-	SQLType(field *reflect.StructField) string
-
-	Database() *Command
-
-	HasTable(name string) *Command
-
-	HasColumn(table, column string) *Command
-
-	CreateTable(definition *Definition) []*Command
+func (*Dialect) Quote(key string) string {
+	return fmt.Sprintf("`%s`", key)
 }

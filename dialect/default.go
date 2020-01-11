@@ -35,6 +35,10 @@ func (*Default) Name() string {
 	return "default"
 }
 
+func (d *Default) Driver() string {
+	return d.Name()
+}
+
 func (*Default) Quote(key string) string {
 	return fmt.Sprintf(`"%s"`, key)
 }
