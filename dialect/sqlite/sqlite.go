@@ -26,18 +26,22 @@ import (
 	"github.com/yhyzgn/glue/dialect"
 )
 
-type Dialect struct {
+type SQLite struct {
 	dialect.Default
 }
 
-func (*Dialect) Name() string {
+func Dialect() *SQLite {
+	return new(SQLite)
+}
+
+func (*SQLite) Name() string {
 	return "sqlite"
 }
 
-func (*Dialect) Driver() string {
+func (*SQLite) Driver() string {
 	return "sqlite3"
 }
 
-func (*Dialect) Quote(key string) string {
+func (*SQLite) Quote(key string) string {
 	return fmt.Sprintf("`%s`", key)
 }

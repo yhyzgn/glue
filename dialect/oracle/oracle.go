@@ -26,18 +26,22 @@ import (
 	"github.com/yhyzgn/glue/dialect"
 )
 
-type Dialect struct {
+type Oracle struct {
 	dialect.Default
 }
 
-func (*Dialect) Name() string {
+func Dialect() *Oracle {
+	return new(Oracle)
+}
+
+func (*Oracle) Name() string {
 	return "oracle"
 }
 
-func (*Dialect) Driver() string {
+func (*Oracle) Driver() string {
 	return "oci8"
 }
 
-func (*Dialect) Quote(key string) string {
+func (*Oracle) Quote(key string) string {
 	return fmt.Sprintf("`%s`", key)
 }

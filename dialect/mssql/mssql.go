@@ -26,14 +26,22 @@ import (
 	"github.com/yhyzgn/glue/dialect"
 )
 
-type Dialect struct {
+type MSSQL struct {
 	dialect.Default
 }
 
-func (*Dialect) Name() string {
+func Dialect() *MSSQL {
+	return new(MSSQL)
+}
+
+func (*MSSQL) Name() string {
 	return "mssql"
 }
 
-func (*Dialect) Quote(key string) string {
+func (*MSSQL) Driver() string {
+	return "mssql"
+}
+
+func (*MSSQL) Quote(key string) string {
 	return fmt.Sprintf("`%s`", key)
 }

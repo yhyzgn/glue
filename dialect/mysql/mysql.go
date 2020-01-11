@@ -26,14 +26,22 @@ import (
 	"github.com/yhyzgn/glue/dialect"
 )
 
-type Dialect struct {
+type MySQL struct {
 	dialect.Default
 }
 
-func (*Dialect) Name() string {
+func Dialect() *MySQL {
+	return new(MySQL)
+}
+
+func (*MySQL) Name() string {
 	return "mysql"
 }
 
-func (*Dialect) Quote(key string) string {
+func (*MySQL) Driver() string {
+	return "mysql"
+}
+
+func (*MySQL) Quote(key string) string {
 	return fmt.Sprintf("`%s`", key)
 }

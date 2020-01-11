@@ -26,14 +26,22 @@ import (
 	"github.com/yhyzgn/glue/dialect"
 )
 
-type Dialect struct {
+type Postgres struct {
 	dialect.Default
 }
 
-func (*Dialect) Name() string {
+func Dialect() *Postgres {
+	return new(Postgres)
+}
+
+func (*Postgres) Name() string {
 	return "postgres"
 }
 
-func (*Dialect) Quote(key string) string {
+func (*Postgres) Driver() string {
+	return "postgres"
+}
+
+func (*Postgres) Quote(key string) string {
 	return fmt.Sprintf("`%s`", key)
 }
