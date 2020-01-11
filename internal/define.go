@@ -20,3 +20,11 @@
 
 package internal
 
+type IndexType int
+
+const (
+	IndexNormal IndexType = iota
+	IndexUnique
+	IndexFullText
+	IndexSpatial
+)

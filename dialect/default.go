@@ -23,9 +23,10 @@ package dialect
 import (
 	"database/sql"
 	"fmt"
-	"github.com/yhyzgn/glue/external"
 	"github.com/yhyzgn/glue/internal"
+	"github.com/yhyzgn/glue/primary"
 	"reflect"
+	"strings"
 )
 
 type Default struct{}
@@ -38,15 +39,25 @@ func (*Default) Quote(key string) string {
 	return fmt.Sprintf(`"%s"`, key)
 }
 
-func (*Default) Placeholder(index int) string {
+func (d *Default) Quotes(keys ...string) []string {
+	if keys == nil || len(keys) == 0 {
+		return nil
+	}
+	for idx := range keys {
+		keys[idx] = d.Quote(keys[idx])
+	}
+	return keys
+}
+
+func (*Default) Placeholder(int) string {
 	return "?"
 }
 
-func (*Default) Insert(executor internal.Executor, command *external.Command) (sql.Result, error) {
+func (*Default) Insert(executor internal.Executor, command *internal.Command) (sql.Result, error) {
 	return nil, nil
 }
 
-func (*Default) Update(executor internal.Executor, command *external.Command) (sql.Result, error) {
+func (*Default) Update(executor internal.Executor, command *internal.Command) (sql.Result, error) {
 	return nil, nil
 }
 
@@ -54,24 +65,115 @@ func (*Default) SQLType(field *reflect.StructField) string {
 	return ""
 }
 
-func (*Default) Database(executor internal.Executor) string {
-	var name string
-	_ = executor.QueryRow("SELECT DATABASE()").Scan(&name)
-	return name
+func (*Default) Database() *internal.Command {
+	return internal.NewCommand("SELECT DATABASE()")
 }
 
-func (d *Default) HasTable(executor internal.Executor, name string) bool {
-	database := d.Database(executor)
-	var count int
-	_ = executor.QueryRow("SELECT count(1) FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = ? AND table_name = ?", database, name).Scan(&count)
-	return count > 0
+func (d *Default) HasTable(name string) *internal.Command {
+	return internal.NewCommand("SELECT").
+		Tab("COUNT(1)").
+		Line("FROM").
+		Tab("INFORMATION_SCHEMA.TABLES").
+		Line("WHERE").
+		Tab("table_schema = ?").
+		Tab("AND table_name = ?").
+		Arguments(d.Database(), name)
 }
 
-func (d *Default) HasColumn(executor internal.Executor, table, column string) bool {
-	database := d.Database(executor)
-	var count int
-	_ = executor.QueryRow("SELECT count(1) FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = ? AND table_name = ? AND column_name = ?", database, table, column).Scan(&count)
-	return count > 0
+func (d *Default) HasColumn(table, column string) *internal.Command {
+	return internal.NewCommand("SELECT").
+		Tab("COUNT(1)").
+		Line("FROM").
+		Tab("INFORMATION_SCHEMA.COLUMNS").
+		Line("WHERE").
+		Tab("table_schema = ?").
+		Tab("AND table_name = ?").
+		Tab("AND column_name = ?").
+		Arguments(d.Database(), table, column)
 }
 
-func (*Default) CreateTable() {}
+func (d *Default) CreateTable(definition *internal.Definition) []*internal.Command {
+	if definition == nil || definition.Fields == nil || len(definition.Fields) == 0 {
+		return nil
+	}
+	ln := len(definition.Fields)
+	// 一张表只允许一个 AUTO_INCREMENT 主键，需要标识判断
+	hasAutoIncrement := false
+
+	cmd := internal.NewCommand("CREATE TABLE").Space(d.Quote(definition.TableName)).Space("(")
+	for idx, field := range definition.Fields {
+		cmd.TabLine(d.Quote(field.Column)).Space(field.SQLType)
+		if field.NotNull {
+			cmd.Space("NOT")
+		}
+		cmd.Space("NULL")
+		if field.IsPrimary {
+			stg := definition.Strategy
+			if !hasAutoIncrement && stg != nil && reflect.TypeOf(stg).Elem() == reflect.TypeOf(primary.AutoIncrement{}) {
+				// AutoIncrement
+				cmd.Space("AUTO_INCREMENT")
+				hasAutoIncrement = true
+			}
+		}
+		if field.Default != nil {
+			cmd.Space("DEFAULT").Space(field.Default.(string))
+		}
+		if field.Comment != "" {
+			cmd.Space("COMMENT").Space(fmt.Sprintf("'%s'", field.Comment))
+		}
+		if idx < ln-1 {
+			cmd.Append(",")
+		}
+	}
+	if len(definition.PrimaryKeys) > 0 {
+		// 有主键
+		keys := make([]string, 0)
+		for _, field := range definition.PrimaryKeys {
+			keys = append(keys, d.Quote(field.Column))
+		}
+		cmd.Append(",").TabLine(fmt.Sprintf("PRIMARY KEY(%s)", strings.Join(keys, ", ")))
+	}
+	if len(definition.Indexes) > 0 {
+		// 有索引
+		for name, indexes := range definition.Indexes {
+			if indexes != nil && len(indexes) > 0 {
+				keys := make([]string, 0)
+				indexType := indexes[0].Type
+				for _, index := range indexes {
+					keys = append(keys, d.Quote(index.Column))
+				}
+				cmd.Append(",")
+				switch indexType {
+				case internal.IndexUnique:
+					cmd.TabLine("UNIQUE ")
+					break
+				case internal.IndexFullText:
+					cmd.TabLine("FULLTEXT ")
+					break
+				case internal.IndexSpatial:
+					cmd.TabLine("SPATIAL ")
+					break
+				default:
+					cmd.TabLine("")
+					break
+				}
+				cmd.Append(fmt.Sprintf("INDEX %s (%s)", d.Quote(name), strings.Join(keys, ", ")))
+			}
+		}
+	}
+	if len(definition.ForeignKeys) > 0 {
+		// 有外键
+		for name, fks := range definition.ForeignKeys {
+			if fks != nil && len(fks) > 0 {
+				refs := make([]string, 0)
+				for _, index := range fks {
+					refs = append(refs, d.Quote(index.Reference))
+				}
+				cmd.Append(",").TabLine(fmt.Sprintf("CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)", d.Quote(name), d.Quote(fks[0].Column), d.Quote(fks[0].Table), strings.Join(refs, ", ")))
+			}
+		}
+	}
+	cmd.Line(")")
+
+	return []*internal.Command{cmd}
+}

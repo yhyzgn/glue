@@ -22,7 +22,6 @@ package internal
 
 import (
 	"database/sql"
-	"github.com/yhyzgn/glue/external"
 	"reflect"
 )
 
@@ -31,19 +30,21 @@ type Dialect interface {
 
 	Quote(key string) string
 
+	Quotes(keys ...string) []string
+
 	Placeholder(index int) string
 
-	Insert(executor Executor, command *external.Command) (sql.Result, error)
+	Insert(executor Executor, command *Command) (sql.Result, error)
 
-	Update(executor Executor, command *external.Command) (sql.Result, error)
+	Update(executor Executor, command *Command) (sql.Result, error)
 
 	SQLType(field *reflect.StructField) string
 
-	Database(executor Executor) string
+	Database() *Command
 
-	HasTable(executor Executor, name string) bool
+	HasTable(name string) *Command
 
-	HasColumn(executor Executor, table, column string) bool
+	HasColumn(table, column string) *Command
 
-	CreateTable()
+	CreateTable(definition *Definition) []*Command
 }

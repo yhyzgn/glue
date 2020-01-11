@@ -18,7 +18,7 @@
 // version: 1.0.0
 // desc   : 
 
-package external
+package internal
 
 type Command struct {
 	SQL  string
@@ -40,15 +40,25 @@ func (c *Command) Space(sql string) *Command {
 }
 
 func (c *Command) Line(sql string) *Command {
-	return c.TabLine(sql, 0)
+	c.SQL += "\n" + sql
+	return c
 }
 
-func (c *Command) TabLine(sql string, tabs int) *Command {
-	for i := 0; i < tabs; i++ {
-		sql = "\t" + sql
-	}
-	c.SQL += sql
+func (c *Command) Tab(sql string) *Command {
+	return c.Tabs(sql, 1)
+}
+
+func (c *Command) Tabs(sql string, tabs int) *Command {
+	c.SQL += c.tabs(sql, tabs)
 	return c
+}
+
+func (c *Command) TabLine(sql string) *Command {
+	return c.TabsLine(sql, 1)
+}
+
+func (c *Command) TabsLine(sql string, tabs int) *Command {
+	return c.Line(c.tabs(sql, tabs))
 }
 
 func (c *Command) Arguments(args ...interface{}) *Command {
@@ -59,4 +69,11 @@ func (c *Command) Arguments(args ...interface{}) *Command {
 		c.Args = append(c.Args, args...)
 	}
 	return c
+}
+
+func (c *Command) tabs(sql string, tabs int) string {
+	for i := 0; i < tabs; i++ {
+		sql = "\t" + sql
+	}
+	return sql
 }

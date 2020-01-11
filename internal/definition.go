@@ -18,4 +18,48 @@
 // version: 1.0.0
 // desc   : 
 
-package external
+package internal
+
+import (
+	"reflect"
+)
+
+type Definition struct {
+	TableName   string
+	Model       *Model
+	Strategy    Strategy
+	Fields      []*Field
+	PrimaryKeys []*Field
+	Indexes     map[string][]*Index
+	ForeignKeys map[string][]*ForeignKey
+}
+
+type Model struct {
+	Type    reflect.Type
+	ElmType reflect.Type
+}
+
+type Field struct {
+	Name        string
+	Type        reflect.Type
+	ElmType     reflect.Type
+	Column      string
+	SQLType     string
+	IsPrimary   bool
+	NotNull     bool
+	Default     interface{}
+	Comment     string
+}
+
+type Index struct {
+	Name   string
+	Column string
+	Type   IndexType
+}
+
+type ForeignKey struct {
+	Name      string
+	Column    string
+	Table     string
+	Reference string
+}
