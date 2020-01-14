@@ -121,5 +121,5 @@ func TestDefault_CreateTable(t *testing.T) {
 
 	cmd := dft.CreateTable(dfs)
 
-	fmt.Println(cmd[0].SQL)
+	fmt.Println(cmd[0].SQL())
 }

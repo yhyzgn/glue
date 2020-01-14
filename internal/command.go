@@ -21,26 +21,26 @@
 package internal
 
 type Command struct {
-	SQL  string
-	Args []interface{}
+	sql  string
+	args []interface{}
 }
 
 func NewCommand(sql string) *Command {
-	return &Command{SQL: sql, Args: make([]interface{}, 0)}
+	return &Command{sql: sql, args: make([]interface{}, 0)}
 }
 
 func (c *Command) Append(sql string) *Command {
-	c.SQL += sql
+	c.sql += sql
 	return c
 }
 
 func (c *Command) Space(sql string) *Command {
-	c.SQL += " " + sql
+	c.sql += " " + sql
 	return c
 }
 
 func (c *Command) Line(sql string) *Command {
-	c.SQL += "\n" + sql
+	c.sql += "\n" + sql
 	return c
 }
 
@@ -49,7 +49,7 @@ func (c *Command) Tab(sql string) *Command {
 }
 
 func (c *Command) Tabs(sql string, tabs int) *Command {
-	c.SQL += c.tabs(sql, tabs)
+	c.sql += c.tabs(sql, tabs)
 	return c
 }
 
@@ -63,12 +63,20 @@ func (c *Command) TabsLine(sql string, tabs int) *Command {
 
 func (c *Command) Arguments(args ...interface{}) *Command {
 	if args != nil && len(args) > 0 {
-		if c.Args == nil {
-			c.Args = make([]interface{}, 0)
+		if c.args == nil {
+			c.args = make([]interface{}, 0)
 		}
-		c.Args = append(c.Args, args...)
+		c.args = append(c.args, args...)
 	}
 	return c
+}
+
+func (c *Command) SQL() string {
+	return c.sql
+}
+
+func (c *Command) Args() []interface{} {
+	return c.args
 }
 
 func (c *Command) tabs(sql string, tabs int) string {

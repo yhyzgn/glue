@@ -273,17 +273,16 @@ func (*Default) Select() *internal.Command {
 }
 
 func (*Default) Count(cmd *internal.Command) *internal.Command {
-	return internal.NewCommand(fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS T", cmd.SQL)).Arguments(cmd.Args...)
+	return internal.NewCommand(fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS T", cmd.SQL())).Arguments(cmd.Args()...)
 }
 
 func (d *Default) Page(cmd *internal.Command, page, size int) *internal.Command {
 	if page <= 0 {
 		page = 0
 	}
-	holderCount := len(cmd.Args)
 	offset := (page - 1) * size
-	cmd.Args = append(cmd.Args, offset, size)
-	return internal.NewCommand(fmt.Sprintf("SELECT * FROM (%s) AS T LIMIT %s, %s", cmd.SQL, d.Placeholder(holderCount+1), d.Placeholder(holderCount+2))).Arguments(cmd.Args...)
+	args := append(cmd.Args(), offset, size)
+	return internal.NewCommand(fmt.Sprintf("SELECT * FROM (%s) AS T LIMIT ?, ?", cmd.SQL())).Arguments(args...)
 }
 
 func extraOfColumn(notNull bool, defValue interface{}) (result string) {
