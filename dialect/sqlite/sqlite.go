@@ -31,7 +31,8 @@ type SQLite struct {
 }
 
 func Dialect() *SQLite {
-	return new(SQLite)
+	dialect.Current = new(SQLite)
+	return dialect.Current.(*SQLite)
 }
 
 func (*SQLite) Name() string {

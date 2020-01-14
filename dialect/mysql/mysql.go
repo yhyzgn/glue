@@ -31,7 +31,8 @@ type MySQL struct {
 }
 
 func Dialect() *MySQL {
-	return new(MySQL)
+	dialect.Current = new(MySQL)
+	return dialect.Current.(*MySQL)
 }
 
 func (*MySQL) Name() string {

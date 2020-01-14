@@ -31,7 +31,8 @@ type MSSQL struct {
 }
 
 func Dialect() *MSSQL {
-	return new(MSSQL)
+	dialect.Current = new(MSSQL)
+	return dialect.Current.(*MSSQL)
 }
 
 func (*MSSQL) Name() string {

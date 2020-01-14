@@ -1,4 +1,4 @@
-// Copyright 2020 yhyzgn glue
+// Copyright 2019 yhyzgn glue
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,35 +14,22 @@
 
 // author : 颜洪毅
 // e-mail : yhyzgn@gmail.com
-// time   : 2020-01-11 4:40 下午
+// time   : 2020-01-14 17:17
 // version: 1.0.0
 // desc   : 
 
-package postgres
+package glue
 
 import (
 	"fmt"
-	_ "github.com/lib/pq"
 	"github.com/yhyzgn/glue/dialect"
+	"github.com/yhyzgn/glue/dialect/mysql"
+	"testing"
 )
 
-type Postgres struct {
-	dialect.Default
-}
+func Test(t *testing.T) {
+	dl := mysql.Dialect()
 
-func Dialect() *Postgres {
-	dialect.Current = new(Postgres)
-	return dialect.Current.(*Postgres)
-}
-
-func (*Postgres) Name() string {
-	return "postgres"
-}
-
-func (*Postgres) Driver() string {
-	return "postgres"
-}
-
-func (*Postgres) Quote(key string) string {
-	return fmt.Sprintf("`%s`", key)
+	fmt.Println(dl.Name())
+	fmt.Println(dialect.Current.Name())
 }

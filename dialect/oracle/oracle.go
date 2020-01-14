@@ -31,7 +31,8 @@ type Oracle struct {
 }
 
 func Dialect() *Oracle {
-	return new(Oracle)
+	dialect.Current = new(Oracle)
+	return dialect.Current.(*Oracle)
 }
 
 func (*Oracle) Name() string {
