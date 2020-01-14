@@ -36,9 +36,9 @@ type Dialect interface {
 
 	Placeholder(index int) string
 
-	Insert(executor Executor, command *Command) (sql.Result, error)
+	InsertExecutor(executor Executor, command *Command) (sql.Result, error)
 
-	Update(executor Executor, command *Command) (sql.Result, error)
+	UpdateExecutor(executor Executor, command *Command) (sql.Result, error)
 
 	SQLType(field *reflect.StructField) string
 
@@ -46,7 +46,41 @@ type Dialect interface {
 
 	HasTable(name string) *Command
 
+	CreateTable(definition *Definition) []*Command
+
+	Columns(table string) *Command
+
 	HasColumn(table, column string) *Command
 
-	CreateTable(definition *Definition) []*Command
+	ModifyColumn(table, column, rename, tpy, comment string, notNull bool, defValue interface{}) *Command
+
+	AddColumn(table, column, tpy, comment string, notNull bool, defValue interface{}) *Command
+
+	DropColumn(table, column string) *Command
+
+	HasIndex(table, name string) *Command
+
+	RemoveIndex(table, name string) *Command
+
+	HasForeignKey(table, name string) *Command
+
+	AddForeignKey(table string, key *ForeignKey) *Command
+
+	RemoveForeignKey(table, name string) *Command
+
+	DefaultValue() string
+
+	BuildKeyName(kind, table string, fields ...string) string
+
+	Insert()
+
+	Delete()
+
+	Remove()
+
+	Update()
+
+	Select()
+
+	Page()
 }

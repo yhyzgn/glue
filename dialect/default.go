@@ -57,11 +57,11 @@ func (*Default) Placeholder(int) string {
 	return "?"
 }
 
-func (*Default) Insert(executor internal.Executor, command *internal.Command) (sql.Result, error) {
+func (*Default) InsertExecutor(executor internal.Executor, command *internal.Command) (sql.Result, error) {
 	return nil, nil
 }
 
-func (*Default) Update(executor internal.Executor, command *internal.Command) (sql.Result, error) {
+func (*Default) UpdateExecutor(executor internal.Executor, command *internal.Command) (sql.Result, error) {
 	return nil, nil
 }
 
@@ -75,25 +75,13 @@ func (*Default) Database() *internal.Command {
 
 func (d *Default) HasTable(name string) *internal.Command {
 	return internal.NewCommand("SELECT").
-		Tab("COUNT(1)").
+		TabLine("COUNT(1)").
 		Line("FROM").
-		Tab("INFORMATION_SCHEMA.TABLES").
+		TabLine("INFORMATION_SCHEMA.TABLES").
 		Line("WHERE").
-		Tab("table_schema = ?").
-		Tab("AND table_name = ?").
+		TabLine("table_schema = ?").
+		TabLine("AND table_name = ?").
 		Arguments(d.Database(), name)
-}
-
-func (d *Default) HasColumn(table, column string) *internal.Command {
-	return internal.NewCommand("SELECT").
-		Tab("COUNT(1)").
-		Line("FROM").
-		Tab("INFORMATION_SCHEMA.COLUMNS").
-		Line("WHERE").
-		Tab("table_schema = ?").
-		Tab("AND table_name = ?").
-		Tab("AND column_name = ?").
-		Arguments(d.Database(), table, column)
 }
 
 func (d *Default) CreateTable(definition *internal.Definition) []*internal.Command {
@@ -173,11 +161,113 @@ func (d *Default) CreateTable(definition *internal.Definition) []*internal.Comma
 				for _, index := range fks {
 					refs = append(refs, d.Quote(index.Reference))
 				}
-				cmd.Append(",").TabLine(fmt.Sprintf("CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)", d.Quote(name), d.Quote(fks[0].Column), d.Quote(fks[0].Table), strings.Join(refs, ", ")))
+				cmd.Append(",").TabLine(fmt.Sprintf("CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)", name, d.Quote(fks[0].Column), d.Quote(fks[0].Table), strings.Join(refs, ", ")))
 			}
 		}
 	}
 	cmd.Line(")")
 
 	return []*internal.Command{cmd}
+}
+
+func (d *Default) Columns(table string) *internal.Command {
+	return internal.NewCommand("SELECT").
+		TabLine("*").
+		Line("FROM").
+		TabLine("INFORMATION_SCHEMA.COLUMNS").
+		Line("WHERE").
+		TabLine("table_schema = ?").
+		TabLine("AND table_name = ?").
+		Line("ORDER BY").
+		TabLine("ORDINAL_POSITION ASC").
+		Arguments(d.Database(), table)
+}
+
+func (d *Default) HasColumn(table, column string) *internal.Command {
+	return internal.NewCommand("SELECT").
+		TabLine("COUNT(1)").
+		Line("FROM").
+		TabLine("INFORMATION_SCHEMA.COLUMNS").
+		Line("WHERE").
+		TabLine("table_schema = ?").
+		TabLine("AND table_name = ?").
+		TabLine("AND column_name = ?").
+		Arguments(d.Database(), table, column)
+}
+
+func (d *Default) ModifyColumn(table, column, rename, tpy, comment string, notNull bool, defValue interface{}) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %v CHANGE COLUMN %v %v %v %v COMMENT '%v'", d.Quote(table), d.Quote(column), d.Quote(rename), tpy, extraOfColumn(notNull, defValue), comment))
+}
+
+func (d *Default) AddColumn(table, column, tpy, comment string, notNull bool, defValue interface{}) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %v ADD COLUMN %v %v %v COMMENT '%v'", d.Quote(table), d.Quote(column), tpy, extraOfColumn(notNull, defValue), comment))
+}
+
+func (d *Default) DropColumn(table, column string) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %v DROP COLUMN %v", d.Quote(table), d.Quote(column)))
+}
+
+func (d *Default) HasIndex(table, name string) *internal.Command {
+	return internal.NewCommand("SELECT").
+		TabLine("COUNT(1)").
+		Line("FROM").
+		TabLine("INFORMATION_SCHEMA.STATISTICS").
+		Line("WHERE").
+		TabLine("table_schema = ?").
+		TabLine("AND table_schema = ?").
+		TabLine("AND index_name = ?").
+		Arguments(d.Database(), d.Quote(table), d.Quote(name))
+}
+
+func (d *Default) RemoveIndex(table, name string) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("DROP INDEX %v", d.Quote(name)))
+}
+
+func (d *Default) HasForeignKey(table, name string) *internal.Command {
+	return internal.NewCommand("SELECT").
+		TabLine("COUNT(1)").
+		Line("FROM").
+		TabLine("INFORMATION_SCHEMA.TABLE_CONSTRAINTS").
+		Line("WHERE").
+		TabLine("CONSTRAINT_SCHEMA = ?").
+		TabLine("AND TABLE_NAME = ?").
+		TabLine("AND CONSTRAINT_NAME = ?").
+		TabLine("AND CONSTRAINT_TYPE = 'FOREIGN KEY'").
+		Arguments(d.Database(), table, name)
+}
+
+func (d *Default) AddForeignKey(table string, key *internal.ForeignKey) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s)", d.Quote(table), key.Name, key.Column, d.Quote(key.Table), key.Reference))
+}
+
+func (d *Default) RemoveForeignKey(table, name string) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %s DROP FOREIGN KEY (%s)", d.Quote(table), name))
+}
+
+func (*Default) DefaultValue() string {
+	return "DEFAULT VALUES"
+}
+
+func (*Default) BuildKeyName(kind, table string, fields ...string) string {
+	return fmt.Sprintf("%s_%s,%s", kind, table, strings.Join(fields, "_"))
+}
+
+func extraOfColumn(notNull bool, defValue interface{}) (result string) {
+	if notNull {
+		result += "NOT "
+	}
+	result += "NULL"
+
+	if defValue != nil {
+		result += " DEFAULT "
+		tp := reflect.ValueOf(defValue)
+		value := fmt.Sprintf("%v", defValue)
+		if tp.Kind() == reflect.String {
+			result += fmt.Sprintf("'%v'", value)
+		} else {
+			result += value
+		}
+	}
+
+	return
 }
