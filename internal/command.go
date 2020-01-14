@@ -26,7 +26,7 @@ type Command struct {
 }
 
 func NewCommand(sql string) *Command {
-	return &Command{SQL: sql}
+	return &Command{SQL: sql, Args: make([]interface{}, 0)}
 }
 
 func (c *Command) Append(sql string) *Command {

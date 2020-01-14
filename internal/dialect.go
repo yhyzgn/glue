@@ -72,15 +72,17 @@ type Dialect interface {
 
 	BuildKeyName(kind, table string, fields ...string) string
 
-	Insert()
+	Insert() *Command
 
-	Delete()
+	Delete() *Command
 
-	Remove()
+	Remove() *Command
 
-	Update()
+	Update() *Command
 
-	Select()
+	Select() *Command
 
-	Page()
+	Count(cmd *Command) *Command
+
+	Page(cmd *Command, page, size int) *Command
 }

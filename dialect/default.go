@@ -75,7 +75,7 @@ func (*Default) Database() *internal.Command {
 
 func (d *Default) HasTable(name string) *internal.Command {
 	return internal.NewCommand("SELECT").
-		TabLine("COUNT(1)").
+		TabLine("COUNT(*)").
 		Line("FROM").
 		TabLine("INFORMATION_SCHEMA.TABLES").
 		Line("WHERE").
@@ -185,7 +185,7 @@ func (d *Default) Columns(table string) *internal.Command {
 
 func (d *Default) HasColumn(table, column string) *internal.Command {
 	return internal.NewCommand("SELECT").
-		TabLine("COUNT(1)").
+		TabLine("COUNT(*)").
 		Line("FROM").
 		TabLine("INFORMATION_SCHEMA.COLUMNS").
 		Line("WHERE").
@@ -209,7 +209,7 @@ func (d *Default) DropColumn(table, column string) *internal.Command {
 
 func (d *Default) HasIndex(table, name string) *internal.Command {
 	return internal.NewCommand("SELECT").
-		TabLine("COUNT(1)").
+		TabLine("COUNT(*)").
 		Line("FROM").
 		TabLine("INFORMATION_SCHEMA.STATISTICS").
 		Line("WHERE").
@@ -225,7 +225,7 @@ func (d *Default) RemoveIndex(table, name string) *internal.Command {
 
 func (d *Default) HasForeignKey(table, name string) *internal.Command {
 	return internal.NewCommand("SELECT").
-		TabLine("COUNT(1)").
+		TabLine("COUNT(*)").
 		Line("FROM").
 		TabLine("INFORMATION_SCHEMA.TABLE_CONSTRAINTS").
 		Line("WHERE").
@@ -250,6 +250,40 @@ func (*Default) DefaultValue() string {
 
 func (*Default) BuildKeyName(kind, table string, fields ...string) string {
 	return fmt.Sprintf("%s_%s,%s", kind, table, strings.Join(fields, "_"))
+}
+
+func (*Default) Insert() *internal.Command {
+	return nil
+}
+
+func (*Default) Delete() *internal.Command {
+	return nil
+}
+
+func (*Default) Remove() *internal.Command {
+	return nil
+}
+
+func (*Default) Update() *internal.Command {
+	return nil
+}
+
+func (*Default) Select() *internal.Command {
+	return nil
+}
+
+func (*Default) Count(cmd *internal.Command) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS T", cmd.SQL)).Arguments(cmd.Args...)
+}
+
+func (d *Default) Page(cmd *internal.Command, page, size int) *internal.Command {
+	if page <= 0 {
+		page = 0
+	}
+	holderCount := len(cmd.Args)
+	offset := (page - 1) * size
+	cmd.Args = append(cmd.Args, offset, size)
+	return internal.NewCommand(fmt.Sprintf("SELECT * FROM (%s) AS T LIMIT %s, %s", cmd.SQL, d.Placeholder(holderCount+1), d.Placeholder(holderCount+2))).Arguments(cmd.Args...)
 }
 
 func extraOfColumn(notNull bool, defValue interface{}) (result string) {
