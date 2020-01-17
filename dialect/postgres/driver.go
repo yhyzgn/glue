@@ -23,7 +23,6 @@ package postgres
 import (
 	"fmt"
 	_ "github.com/lib/pq"
-	"github.com/yhyzgn/glue/internal"
 )
 
 type postgres struct {
@@ -45,6 +44,6 @@ func (*postgres) Placeholder(index int) string {
 	return fmt.Sprintf("$%d", index)
 }
 
-func (*postgres) Database() *internal.Command {
-	return internal.NewCommand("SELECT DATABASE()")
+func (*postgres) Database() string {
+	return "SELECT DATABASE()"
 }

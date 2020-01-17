@@ -23,7 +23,6 @@ package mysql
 import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/yhyzgn/glue/internal"
 )
 
 type mysql struct {
@@ -45,6 +44,6 @@ func (*mysql) Placeholder(index int) string {
 	return "?"
 }
 
-func (*mysql) Database() *internal.Command {
-	return internal.NewCommand("SELECT DATABASE()")
+func (*mysql) Database() string {
+	return "SELECT DATABASE()"
 }

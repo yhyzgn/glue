@@ -23,7 +23,6 @@ package oracle
 import (
 	"fmt"
 	_ "github.com/mattn/go-oci8"
-	"github.com/yhyzgn/glue/internal"
 )
 
 type oracle struct {
@@ -45,6 +44,6 @@ func (*oracle) Placeholder(index int) string {
 	return "?"
 }
 
-func (*oracle) Database() *internal.Command {
-	return internal.NewCommand("SELECT DATABASE()")
+func (*oracle) Database() string {
+	return "SELECT DATABASE()"
 }

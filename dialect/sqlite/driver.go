@@ -22,7 +22,6 @@ package sqlite
 
 import (
 	"fmt"
-	"github.com/yhyzgn/glue/internal"
 )
 
 type sqlite struct {
@@ -44,6 +43,6 @@ func (*sqlite) Placeholder(index int) string {
 	return "?"
 }
 
-func (*sqlite) Database() *internal.Command {
-	return internal.NewCommand("SELECT DATABASE()")
+func (*sqlite) Database() string {
+	return "SELECT DATABASE()"
 }
