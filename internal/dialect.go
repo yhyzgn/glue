@@ -26,23 +26,13 @@ import (
 )
 
 type Dialect interface {
-	Name() string
-
-	Driver() string
-
-	Quote(key string) string
-
-	Quotes(keys ...string) []string
-
-	Placeholder(index int) string
+	Driver
 
 	InsertExecutor(executor Executor, command *Command) (sql.Result, error)
 
 	UpdateExecutor(executor Executor, command *Command) (sql.Result, error)
 
 	SQLType(field *reflect.StructField) string
-
-	Database() *Command
 
 	HasTable(name string) *Command
 
@@ -72,15 +62,15 @@ type Dialect interface {
 
 	BuildKeyName(kind, table string, fields ...string) string
 
-	Insert() *Command
+	Insert(value *ExecValue) *Command
 
-	Delete() *Command
+	Delete(value *ExecValue) *Command
 
-	Remove() *Command
+	Remove(value *ExecValue) *Command
 
-	Update() *Command
+	Update(value *ExecValue) *Command
 
-	Select() *Command
+	Select(value *ExecValue) *Command
 
 	Count(cmd *Command) *Command
 

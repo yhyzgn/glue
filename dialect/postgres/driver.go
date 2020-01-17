@@ -1,4 +1,4 @@
-// Copyright 2020 yhyzgn glue
+// Copyright 2019 yhyzgn glue
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,22 +14,37 @@
 
 // author : 颜洪毅
 // e-mail : yhyzgn@gmail.com
-// time   : 2020-01-11 4:42 下午
+// time   : 2020-01-17 11:04
 // version: 1.0.0
 // desc   : 
 
-package sqlite
+package postgres
 
 import (
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/yhyzgn/glue/dialect"
+	"fmt"
+	_ "github.com/lib/pq"
+	"github.com/yhyzgn/glue/internal"
 )
 
-type SQLite struct {
-	*dialect.Creator
+type postgres struct {
 }
 
-func Dialect() *SQLite {
-	dialect.Current = &SQLite{dialect.New(new(sqlite))}
-	return dialect.Current.(*SQLite)
+func (*postgres) Name() string {
+	return "postgres"
+}
+
+func (*postgres) Driver() string {
+	return "postgres"
+}
+
+func (*postgres) Quote(key string) string {
+	return fmt.Sprintf("`%s`", key)
+}
+
+func (*postgres) Placeholder(index int) string {
+	return fmt.Sprintf("$%d", index)
+}
+
+func (*postgres) Database() *internal.Command {
+	return internal.NewCommand("SELECT DATABASE()")
 }

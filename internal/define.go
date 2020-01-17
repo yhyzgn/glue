@@ -22,9 +22,19 @@ package internal
 
 type IndexType int
 
+type ExecType int
+
 const (
 	IndexNormal IndexType = iota
 	IndexUnique
 	IndexFullText
 	IndexSpatial
+)
+
+const (
+	ExecInsert ExecType = iota
+	ExecUpdate
+	ExecSelect
+	ExecDelete
+	ExecRemove
 )

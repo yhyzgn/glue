@@ -21,28 +21,14 @@
 package mysql
 
 import (
-	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/yhyzgn/glue/dialect"
 )
 
 type MySQL struct {
-	dialect.Default
+	*dialect.Creator
 }
 
 func Dialect() *MySQL {
-	dialect.Current = new(MySQL)
+	dialect.Current = &MySQL{dialect.New(new(mysql))}
 	return dialect.Current.(*MySQL)
-}
-
-func (*MySQL) Name() string {
-	return "mysql"
-}
-
-func (*MySQL) Driver() string {
-	return "mysql"
-}
-
-func (*MySQL) Quote(key string) string {
-	return fmt.Sprintf("`%s`", key)
 }

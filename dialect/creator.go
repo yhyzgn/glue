@@ -29,51 +29,51 @@ import (
 	"strings"
 )
 
-type Default struct{}
-
-func (*Default) Name() string {
-	return "default"
+type Creator struct {
+	driver internal.Driver
 }
 
-func (d *Default) Driver() string {
-	return d.Name()
+func New(driver internal.Driver) *Creator {
+	return &Creator{driver: driver}
 }
 
-func (*Default) Quote(key string) string {
-	return fmt.Sprintf(`"%s"`, key)
+func (c *Creator) GetDriver() internal.Driver {
+	return c.driver
 }
 
-func (d *Default) Quotes(keys ...string) []string {
-	if keys == nil || len(keys) == 0 {
-		return nil
-	}
-	for idx := range keys {
-		keys[idx] = d.Quote(keys[idx])
-	}
-	return keys
+func (c *Creator) Name() string {
+	return c.driver.Name()
 }
 
-func (*Default) Placeholder(int) string {
-	return "?"
+func (c *Creator) Driver() string {
+	return c.driver.Driver()
 }
 
-func (*Default) InsertExecutor(executor internal.Executor, command *internal.Command) (sql.Result, error) {
+func (c *Creator) Quote(key string) string {
+	return c.driver.Quote(key)
+}
+
+func (c *Creator) Placeholder(index int) string {
+	return c.driver.Placeholder(index)
+}
+
+func (c *Creator) Database() string {
+	return c.driver.Database()
+}
+
+func (*Creator) InsertExecutor(executor internal.Executor, command *internal.Command) (sql.Result, error) {
 	return nil, nil
 }
 
-func (*Default) UpdateExecutor(executor internal.Executor, command *internal.Command) (sql.Result, error) {
+func (*Creator) UpdateExecutor(executor internal.Executor, command *internal.Command) (sql.Result, error) {
 	return nil, nil
 }
 
-func (*Default) SQLType(field *reflect.StructField) string {
+func (*Creator) SQLType(field *reflect.StructField) string {
 	return ""
 }
 
-func (*Default) Database() *internal.Command {
-	return internal.NewCommand("SELECT DATABASE()")
-}
-
-func (d *Default) HasTable(name string) *internal.Command {
+func (c *Creator) HasTable(name string) *internal.Command {
 	return internal.NewCommand("SELECT").
 		TabLine("COUNT(*)").
 		Line("FROM").
@@ -81,10 +81,10 @@ func (d *Default) HasTable(name string) *internal.Command {
 		Line("WHERE").
 		TabLine("table_schema = ?").
 		TabLine("AND table_name = ?").
-		Arguments(d.Database(), name)
+		Arguments(c.driver.Database(), name)
 }
 
-func (d *Default) CreateTable(definition *internal.Definition) []*internal.Command {
+func (c *Creator) CreateTable(definition *internal.Definition) []*internal.Command {
 	if definition == nil || definition.Fields == nil || len(definition.Fields) == 0 {
 		return nil
 	}
@@ -92,9 +92,9 @@ func (d *Default) CreateTable(definition *internal.Definition) []*internal.Comma
 	// 一张表只允许一个 AUTO_INCREMENT 主键，需要标识判断
 	hasAutoIncrement := false
 
-	cmd := internal.NewCommand("CREATE TABLE").Space(d.Quote(definition.TableName)).Space("(")
+	cmd := internal.NewCommand("CREATE TABLE").Space(c.driver.Quote(definition.TableName)).Space("(")
 	for idx, field := range definition.Fields {
-		cmd.TabLine(d.Quote(field.Column)).Space(field.SQLType)
+		cmd.TabLine(c.driver.Quote(field.Column)).Space(field.SQLType)
 		if field.NotNull {
 			cmd.Space("NOT")
 		}
@@ -121,7 +121,7 @@ func (d *Default) CreateTable(definition *internal.Definition) []*internal.Comma
 		// 有主键
 		keys := make([]string, 0)
 		for _, field := range definition.PrimaryKeys {
-			keys = append(keys, d.Quote(field.Column))
+			keys = append(keys, c.driver.Quote(field.Column))
 		}
 		cmd.Append(",").TabLine(fmt.Sprintf("PRIMARY KEY(%s)", strings.Join(keys, ", ")))
 	}
@@ -132,7 +132,7 @@ func (d *Default) CreateTable(definition *internal.Definition) []*internal.Comma
 				keys := make([]string, 0)
 				indexType := indexes[0].Type
 				for _, index := range indexes {
-					keys = append(keys, d.Quote(index.Column))
+					keys = append(keys, c.driver.Quote(index.Column))
 				}
 				cmd.Append(",")
 				switch indexType {
@@ -149,7 +149,7 @@ func (d *Default) CreateTable(definition *internal.Definition) []*internal.Comma
 					cmd.TabLine("")
 					break
 				}
-				cmd.Append(fmt.Sprintf("INDEX %s (%s)", d.Quote(name), strings.Join(keys, ", ")))
+				cmd.Append(fmt.Sprintf("INDEX %s (%s)", c.driver.Quote(name), strings.Join(keys, ", ")))
 			}
 		}
 	}
@@ -159,9 +159,9 @@ func (d *Default) CreateTable(definition *internal.Definition) []*internal.Comma
 			if fks != nil && len(fks) > 0 {
 				refs := make([]string, 0)
 				for _, index := range fks {
-					refs = append(refs, d.Quote(index.Reference))
+					refs = append(refs, c.driver.Quote(index.Reference))
 				}
-				cmd.Append(",").TabLine(fmt.Sprintf("CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)", name, d.Quote(fks[0].Column), d.Quote(fks[0].Table), strings.Join(refs, ", ")))
+				cmd.Append(",").TabLine(fmt.Sprintf("CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)", name, c.driver.Quote(fks[0].Column), c.driver.Quote(fks[0].Table), strings.Join(refs, ", ")))
 			}
 		}
 	}
@@ -170,7 +170,7 @@ func (d *Default) CreateTable(definition *internal.Definition) []*internal.Comma
 	return []*internal.Command{cmd}
 }
 
-func (d *Default) Columns(table string) *internal.Command {
+func (c *Creator) Columns(table string) *internal.Command {
 	return internal.NewCommand("SELECT").
 		TabLine("*").
 		Line("FROM").
@@ -180,10 +180,10 @@ func (d *Default) Columns(table string) *internal.Command {
 		TabLine("AND table_name = ?").
 		Line("ORDER BY").
 		TabLine("ORDINAL_POSITION ASC").
-		Arguments(d.Database(), table)
+		Arguments(c.driver.Database(), table)
 }
 
-func (d *Default) HasColumn(table, column string) *internal.Command {
+func (c *Creator) HasColumn(table, column string) *internal.Command {
 	return internal.NewCommand("SELECT").
 		TabLine("COUNT(*)").
 		Line("FROM").
@@ -192,22 +192,22 @@ func (d *Default) HasColumn(table, column string) *internal.Command {
 		TabLine("table_schema = ?").
 		TabLine("AND table_name = ?").
 		TabLine("AND column_name = ?").
-		Arguments(d.Database(), table, column)
+		Arguments(c.driver.Database(), table, column)
 }
 
-func (d *Default) ModifyColumn(table, column, rename, tpy, comment string, notNull bool, defValue interface{}) *internal.Command {
-	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %v CHANGE COLUMN %v %v %v %v COMMENT '%v'", d.Quote(table), d.Quote(column), d.Quote(rename), tpy, extraOfColumn(notNull, defValue), comment))
+func (c *Creator) ModifyColumn(table, column, rename, tpy, comment string, notNull bool, defValue interface{}) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %v CHANGE COLUMN %v %v %v %v COMMENT '%v'", c.driver.Quote(table), c.driver.Quote(column), c.driver.Quote(rename), tpy, extraOfColumn(notNull, defValue), comment))
 }
 
-func (d *Default) AddColumn(table, column, tpy, comment string, notNull bool, defValue interface{}) *internal.Command {
-	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %v ADD COLUMN %v %v %v COMMENT '%v'", d.Quote(table), d.Quote(column), tpy, extraOfColumn(notNull, defValue), comment))
+func (c *Creator) AddColumn(table, column, tpy, comment string, notNull bool, defValue interface{}) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %v ADD COLUMN %v %v %v COMMENT '%v'", c.driver.Quote(table), c.driver.Quote(column), tpy, extraOfColumn(notNull, defValue), comment))
 }
 
-func (d *Default) DropColumn(table, column string) *internal.Command {
-	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %v DROP COLUMN %v", d.Quote(table), d.Quote(column)))
+func (c *Creator) DropColumn(table, column string) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %v DROP COLUMN %v", c.driver.Quote(table), c.driver.Quote(column)))
 }
 
-func (d *Default) HasIndex(table, name string) *internal.Command {
+func (c *Creator) HasIndex(table, name string) *internal.Command {
 	return internal.NewCommand("SELECT").
 		TabLine("COUNT(*)").
 		Line("FROM").
@@ -216,14 +216,14 @@ func (d *Default) HasIndex(table, name string) *internal.Command {
 		TabLine("table_schema = ?").
 		TabLine("AND table_schema = ?").
 		TabLine("AND index_name = ?").
-		Arguments(d.Database(), d.Quote(table), d.Quote(name))
+		Arguments(c.driver.Database(), c.driver.Quote(table), c.driver.Quote(name))
 }
 
-func (d *Default) RemoveIndex(table, name string) *internal.Command {
-	return internal.NewCommand(fmt.Sprintf("DROP INDEX %v", d.Quote(name)))
+func (c *Creator) RemoveIndex(table, name string) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("DROP INDEX %v", c.driver.Quote(name)))
 }
 
-func (d *Default) HasForeignKey(table, name string) *internal.Command {
+func (c *Creator) HasForeignKey(table, name string) *internal.Command {
 	return internal.NewCommand("SELECT").
 		TabLine("COUNT(*)").
 		Line("FROM").
@@ -233,50 +233,53 @@ func (d *Default) HasForeignKey(table, name string) *internal.Command {
 		TabLine("AND TABLE_NAME = ?").
 		TabLine("AND CONSTRAINT_NAME = ?").
 		TabLine("AND CONSTRAINT_TYPE = 'FOREIGN KEY'").
-		Arguments(d.Database(), table, name)
+		Arguments(c.driver.Database(), table, name)
 }
 
-func (d *Default) AddForeignKey(table string, key *internal.ForeignKey) *internal.Command {
-	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s)", d.Quote(table), key.Name, key.Column, d.Quote(key.Table), key.Reference))
+func (c *Creator) AddForeignKey(table string, key *internal.ForeignKey) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s)", c.driver.Quote(table), key.Name, key.Column, c.driver.Quote(key.Table), key.Reference))
 }
 
-func (d *Default) RemoveForeignKey(table, name string) *internal.Command {
-	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %s DROP FOREIGN KEY (%s)", d.Quote(table), name))
+func (c *Creator) RemoveForeignKey(table, name string) *internal.Command {
+	return internal.NewCommand(fmt.Sprintf("ALTER TABLE %s DROP FOREIGN KEY (%s)", c.driver.Quote(table), name))
 }
 
-func (*Default) DefaultValue() string {
+func (*Creator) DefaultValue() string {
 	return "DEFAULT VALUES"
 }
 
-func (*Default) BuildKeyName(kind, table string, fields ...string) string {
+func (*Creator) BuildKeyName(kind, table string, fields ...string) string {
 	return fmt.Sprintf("%s_%s,%s", kind, table, strings.Join(fields, "_"))
 }
 
-func (*Default) Insert() *internal.Command {
+func (c *Creator) Insert(value *internal.ExecValue) *internal.Command {
+	if value == nil {
+		return nil
+	}
+	return internal.NewCommand(fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", c.driver.Quote(value.Table), )).Arguments(value.Values...)
+}
+
+func (*Creator) Delete(value *internal.ExecValue) *internal.Command {
 	return nil
 }
 
-func (*Default) Delete() *internal.Command {
+func (*Creator) Remove(value *internal.ExecValue) *internal.Command {
 	return nil
 }
 
-func (*Default) Remove() *internal.Command {
+func (*Creator) Update(value *internal.ExecValue) *internal.Command {
 	return nil
 }
 
-func (*Default) Update() *internal.Command {
+func (*Creator) Select(value *internal.ExecValue) *internal.Command {
 	return nil
 }
 
-func (*Default) Select() *internal.Command {
-	return nil
-}
-
-func (*Default) Count(cmd *internal.Command) *internal.Command {
+func (*Creator) Count(cmd *internal.Command) *internal.Command {
 	return internal.NewCommand(fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS T", cmd.SQL())).Arguments(cmd.Args()...)
 }
 
-func (d *Default) Page(cmd *internal.Command, page, size int) *internal.Command {
+func (c *Creator) Page(cmd *internal.Command, page, size int) *internal.Command {
 	if page <= 0 {
 		page = 0
 	}

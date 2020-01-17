@@ -1,4 +1,4 @@
-// Copyright 2020 yhyzgn glue
+// Copyright 2019 yhyzgn glue
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,22 +14,15 @@
 
 // author : 颜洪毅
 // e-mail : yhyzgn@gmail.com
-// time   : 2020-01-11 4:42 下午
+// time   : 2020-01-17 9:46
 // version: 1.0.0
 // desc   : 
 
-package sqlite
+package internal
 
-import (
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/yhyzgn/glue/dialect"
-)
-
-type SQLite struct {
-	*dialect.Creator
-}
-
-func Dialect() *SQLite {
-	dialect.Current = &SQLite{dialect.New(new(sqlite))}
-	return dialect.Current.(*SQLite)
+type ExecValue struct {
+	Table   string
+	Columns []string
+	Values  []interface{}
+	Type    ExecType
 }

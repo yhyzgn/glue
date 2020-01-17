@@ -23,13 +23,17 @@ package glue
 import (
 	"fmt"
 	"github.com/yhyzgn/glue/dialect"
-	"github.com/yhyzgn/glue/dialect/mysql"
+	"github.com/yhyzgn/glue/dialect/mssql"
 	"testing"
 )
 
 func Test(t *testing.T) {
-	dl := mysql.Dialect()
+	dl := mssql.Dialect()
 
 	fmt.Println(dl.Name())
 	fmt.Println(dialect.Current.Name())
+
+	cmd := dl.HasTable("user")
+	fmt.Println(cmd.SQL())
+	fmt.Println(cmd.Args()...)
 }

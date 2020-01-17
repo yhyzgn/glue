@@ -21,28 +21,14 @@
 package mssql
 
 import (
-	"fmt"
-	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/yhyzgn/glue/dialect"
 )
 
 type MSSQL struct {
-	dialect.Default
+	*dialect.Creator
 }
 
 func Dialect() *MSSQL {
-	dialect.Current = new(MSSQL)
+	dialect.Current = &MSSQL{dialect.New(new(mssql))}
 	return dialect.Current.(*MSSQL)
-}
-
-func (*MSSQL) Name() string {
-	return "mssql"
-}
-
-func (*MSSQL) Driver() string {
-	return "mssql"
-}
-
-func (*MSSQL) Quote(key string) string {
-	return fmt.Sprintf("`%s`", key)
 }

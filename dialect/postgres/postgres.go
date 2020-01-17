@@ -21,28 +21,14 @@
 package postgres
 
 import (
-	"fmt"
-	_ "github.com/lib/pq"
 	"github.com/yhyzgn/glue/dialect"
 )
 
 type Postgres struct {
-	dialect.Default
+	*dialect.Creator
 }
 
 func Dialect() *Postgres {
-	dialect.Current = new(Postgres)
+	dialect.Current = &Postgres{dialect.New(new(postgres))}
 	return dialect.Current.(*Postgres)
-}
-
-func (*Postgres) Name() string {
-	return "postgres"
-}
-
-func (*Postgres) Driver() string {
-	return "postgres"
-}
-
-func (*Postgres) Quote(key string) string {
-	return fmt.Sprintf("`%s`", key)
 }

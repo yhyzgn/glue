@@ -21,28 +21,14 @@
 package oracle
 
 import (
-	"fmt"
-	_ "github.com/mattn/go-oci8"
 	"github.com/yhyzgn/glue/dialect"
 )
 
 type Oracle struct {
-	dialect.Default
+	*dialect.Creator
 }
 
 func Dialect() *Oracle {
-	dialect.Current = new(Oracle)
+	dialect.Current = &Oracle{dialect.New(new(oracle))}
 	return dialect.Current.(*Oracle)
-}
-
-func (*Oracle) Name() string {
-	return "oracle"
-}
-
-func (*Oracle) Driver() string {
-	return "oci8"
-}
-
-func (*Oracle) Quote(key string) string {
-	return fmt.Sprintf("`%s`", key)
 }

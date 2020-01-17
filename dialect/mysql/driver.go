@@ -1,4 +1,4 @@
-// Copyright 2020 yhyzgn glue
+// Copyright 2019 yhyzgn glue
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,22 +14,37 @@
 
 // author : 颜洪毅
 // e-mail : yhyzgn@gmail.com
-// time   : 2020-01-11 4:42 下午
+// time   : 2020-01-17 11:04
 // version: 1.0.0
 // desc   : 
 
-package sqlite
+package mysql
 
 import (
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/yhyzgn/glue/dialect"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/yhyzgn/glue/internal"
 )
 
-type SQLite struct {
-	*dialect.Creator
+type mysql struct {
 }
 
-func Dialect() *SQLite {
-	dialect.Current = &SQLite{dialect.New(new(sqlite))}
-	return dialect.Current.(*SQLite)
+func (*mysql) Name() string {
+	return "mysql"
+}
+
+func (*mysql) Driver() string {
+	return "mysql"
+}
+
+func (*mysql) Quote(key string) string {
+	return fmt.Sprintf("`%s`", key)
+}
+
+func (*mysql) Placeholder(index int) string {
+	return "?"
+}
+
+func (*mysql) Database() *internal.Command {
+	return internal.NewCommand("SELECT DATABASE()")
 }

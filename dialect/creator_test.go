@@ -117,7 +117,7 @@ func TestDefault_CreateTable(t *testing.T) {
 		ForeignKeys: map[string][]*internal.ForeignKey{},
 	}
 
-	dft := Default{}
+	dft := Creator{}
 
 	cmd := dft.CreateTable(dfs)
 
